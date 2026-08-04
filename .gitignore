@@ -19,4 +19,4 @@ mobile/ios/Flutter/Flutter.podspec
 
 # IDE & OS Ignores
 .DS_Store
-.vscode/
+.vscode/git add .gitignore
