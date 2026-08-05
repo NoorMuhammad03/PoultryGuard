@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../authentication/services/registration_draft.dart';
 import '../../app/app_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/utils/preferences_service.dart';
@@ -23,6 +24,8 @@ class _LanguageScreenState extends State<LanguageScreen> {
     });
 
     await PreferencesService.saveLanguage(selectedLanguage);
+
+    RegistrationDraft.preferredLanguage = selectedLanguage;
 
     if (!mounted) return;
 

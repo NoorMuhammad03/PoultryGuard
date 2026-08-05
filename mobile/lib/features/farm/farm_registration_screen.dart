@@ -4,6 +4,8 @@ import '../../app/app_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_button.dart';
 import '../../core/widgets/app_text_field.dart';
+import '../authentication/services/registration_draft.dart';
+import 'services/farm_service.dart';
 
 class FarmRegistrationScreen extends StatefulWidget {
   const FarmRegistrationScreen({super.key});
@@ -21,6 +23,7 @@ class _FarmRegistrationScreenState extends State<FarmRegistrationScreen> {
   bool sensorAlertsEnabled = true;
   bool diseaseAlertsEnabled = true;
   bool communityAlertsEnabled = true;
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -30,16 +33,57 @@ class _FarmRegistrationScreenState extends State<FarmRegistrationScreen> {
     super.dispose();
   }
 
-  void saveFarm() {
+  Future<void> saveFarm() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
 
-    Navigator.pushNamedAndRemoveUntil(
-      context,
-      AppRouter.farmerDashboard,
-      (route) => false,
-    );
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      await FarmService.createFarm(
+        farmName: _farmNameController.text.trim(),
+        address: _addressController.text.trim(),
+        birdCapacity: int.parse(_capacityController.text.trim()),
+        latitude: null,
+        longitude: null,
+        sensorAlerts: sensorAlertsEnabled,
+        diseaseAlerts: diseaseAlertsEnabled,
+        communityAlerts: communityAlertsEnabled,
+      );
+
+      RegistrationDraft.clear();
+
+      if (!mounted) return;
+
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        AppRouter.farmerDashboard,
+        (route) => false,
+      );
+    } on FarmException catch (error) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
+    } catch (_) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('An unexpected error occurred. Please try again.'),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   @override
@@ -57,9 +101,11 @@ class _FarmRegistrationScreenState extends State<FarmRegistrationScreen> {
                 Align(
                   alignment: Alignment.centerLeft,
                   child: IconButton(
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
+                    onPressed: _isLoading
+                        ? null
+                        : () {
+                            Navigator.pop(context);
+                          },
                     icon: const Icon(
                       Icons.arrow_back,
                       color: AppColors.textPrimary,
@@ -94,7 +140,7 @@ class _FarmRegistrationScreenState extends State<FarmRegistrationScreen> {
                 AppTextField(
                   controller: _farmNameController,
                   label: 'Farm name',
-                  hint: 'Example: Noor Poultry Farm',
+                  hint: 'Example: Ali Poultry Farm',
                   prefixIcon: Icons.agriculture_outlined,
                   validator: (value) {
                     final farmName = value?.trim() ?? '';
@@ -150,7 +196,11 @@ class _FarmRegistrationScreenState extends State<FarmRegistrationScreen> {
                 const SizedBox(height: 14),
 
                 OutlinedButton.icon(
-                  onPressed: () {},
+                  onPressed: _isLoading
+                      ? null
+                      : () {
+                          // GPS integration will be added later.
+                        },
                   icon: const Icon(Icons.my_location),
                   label: const Text('Use current location'),
                 ),
@@ -173,6 +223,7 @@ class _FarmRegistrationScreenState extends State<FarmRegistrationScreen> {
                   subtitle: 'Temperature, humidity, ammonia and smoke warnings',
                   value: sensorAlertsEnabled,
                   icon: Icons.sensors_outlined,
+                  enabled: !_isLoading,
                   onChanged: (value) {
                     setState(() {
                       sensorAlertsEnabled = value;
@@ -188,6 +239,7 @@ class _FarmRegistrationScreenState extends State<FarmRegistrationScreen> {
                       'AI diagnosis results and disease-risk notifications',
                   value: diseaseAlertsEnabled,
                   icon: Icons.health_and_safety_outlined,
+                  enabled: !_isLoading,
                   onChanged: (value) {
                     setState(() {
                       diseaseAlertsEnabled = value;
@@ -202,6 +254,7 @@ class _FarmRegistrationScreenState extends State<FarmRegistrationScreen> {
                   subtitle: 'Warnings about nearby poultry disease outbreaks',
                   value: communityAlertsEnabled,
                   icon: Icons.location_city_outlined,
+                  enabled: !_isLoading,
                   onChanged: (value) {
                     setState(() {
                       communityAlertsEnabled = value;
@@ -214,7 +267,8 @@ class _FarmRegistrationScreenState extends State<FarmRegistrationScreen> {
                 AppButton(
                   text: 'Save farm',
                   icon: Icons.check_circle_outline,
-                  onPressed: saveFarm,
+                  isLoading: _isLoading,
+                  onPressed: _isLoading ? null : saveFarm,
                 ),
               ],
             ),
@@ -231,6 +285,7 @@ class _PreferenceCard extends StatelessWidget {
     required this.subtitle,
     required this.value,
     required this.icon,
+    required this.enabled,
     required this.onChanged,
   });
 
@@ -238,6 +293,7 @@ class _PreferenceCard extends StatelessWidget {
   final String subtitle;
   final bool value;
   final IconData icon;
+  final bool enabled;
   final ValueChanged<bool> onChanged;
 
   @override
@@ -245,7 +301,7 @@ class _PreferenceCard extends StatelessWidget {
     return Card(
       child: SwitchListTile(
         value: value,
-        onChanged: onChanged,
+        onChanged: enabled ? onChanged : null,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         secondary: Container(
           width: 42,

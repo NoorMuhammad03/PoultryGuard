@@ -1,9 +1,75 @@
 import 'package:flutter/material.dart';
-
+import '../../app/app_router.dart';
+import '../authentication/services/auth_service.dart';
 import '../../core/theme/app_colors.dart';
 
-class FarmerDashboardScreen extends StatelessWidget {
+class FarmerDashboardScreen extends StatefulWidget {
   const FarmerDashboardScreen({super.key});
+
+  @override
+  State<FarmerDashboardScreen> createState() => _FarmerDashboardScreenState();
+}
+
+class _FarmerDashboardScreenState extends State<FarmerDashboardScreen> {
+  bool _isLoggingOut = false;
+
+  Future<void> _logout() async {
+    if (_isLoggingOut) return;
+
+    final shouldLogout = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Log out'),
+          content: const Text('Are you sure you want to log out?'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(dialogContext, false);
+              },
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.pop(dialogContext, true);
+              },
+              child: const Text('Log out'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (shouldLogout != true || !mounted) return;
+
+    setState(() {
+      _isLoggingOut = true;
+    });
+
+    try {
+      await AuthService.logout();
+
+      if (!mounted) return;
+
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        AppRouter.login,
+        (route) => false,
+      );
+    } catch (_) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Logout failed. Please try again.')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoggingOut = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -16,6 +82,20 @@ class FarmerDashboardScreen extends StatelessWidget {
           IconButton(
             onPressed: () {},
             icon: const Icon(Icons.notifications_outlined),
+          ),
+          IconButton(
+            onPressed: _isLoggingOut ? null : _logout,
+            tooltip: 'Log out',
+            icon: _isLoggingOut
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                : const Icon(Icons.logout),
           ),
         ],
       ),

@@ -4,6 +4,7 @@ import '../../app/app_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_button.dart';
 import '../../core/widgets/app_text_field.dart';
+import 'services/registration_draft.dart';
 
 class RegistrationScreen extends StatefulWidget {
   const RegistrationScreen({super.key});
@@ -26,6 +27,8 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     if (!_formKey.currentState!.validate()) {
       return;
     }
+
+    RegistrationDraft.phoneNumber = '+92${_phoneController.text.trim()}';
 
     Navigator.pushNamed(context, AppRouter.otp);
   }

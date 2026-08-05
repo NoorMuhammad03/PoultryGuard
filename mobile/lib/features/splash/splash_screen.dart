@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
+import '../../app/app_router.dart';
 import '../../core/theme/app_colors.dart';
-import '../language/language_screen.dart';
+import '../../core/utils/preferences_service.dart';
+import '../authentication/services/auth_service.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -16,14 +18,36 @@ class _SplashScreenState extends State<SplashScreen> {
     super.initState();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      Future.delayed(const Duration(seconds: 2), () {
-        if (!mounted) return;
-
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const LanguageScreen()),
-        );
-      });
+      _decideNextScreen();
     });
+  }
+
+  Future<void> _decideNextScreen() async {
+    // Keep the splash visible briefly.
+    await Future<void>.delayed(const Duration(seconds: 2));
+
+    final sessionRestored = await AuthService.restoreSession();
+
+    if (!mounted) return;
+
+    if (sessionRestored) {
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        AppRouter.farmerDashboard,
+        (route) => false,
+      );
+      return;
+    }
+
+    final savedLanguage = await PreferencesService.getLanguage();
+
+    if (!mounted) return;
+
+    if (savedLanguage != null && savedLanguage.isNotEmpty) {
+      Navigator.pushReplacementNamed(context, AppRouter.login);
+    } else {
+      Navigator.pushReplacementNamed(context, AppRouter.language);
+    }
   }
 
   @override
@@ -38,20 +62,20 @@ class _SplashScreenState extends State<SplashScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
-                  width: 82,
-                  height: 82,
+                  width: 90,
+                  height: 90,
                   decoration: BoxDecoration(
                     color: AppColors.primary,
-                    borderRadius: BorderRadius.circular(22),
+                    borderRadius: BorderRadius.circular(24),
                   ),
                   child: const Icon(
                     Icons.shield_outlined,
-                    size: 44,
+                    size: 48,
                     color: AppColors.primaryLight,
                   ),
                 ),
 
-                const SizedBox(height: 18),
+                const SizedBox(height: 20),
 
                 const Text(
                   'PoultryGuard',
@@ -88,12 +112,12 @@ class _SplashScreenState extends State<SplashScreen> {
 
                 const SizedBox(height: 34),
 
-                Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: AppColors.primary,
-                    borderRadius: BorderRadius.circular(2),
+                const SizedBox(
+                  width: 24,
+                  height: 24,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.5,
+                    color: AppColors.primaryLight,
                   ),
                 ),
               ],

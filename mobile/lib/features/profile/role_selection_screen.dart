@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../../app/app_router.dart';
 import '../../core/theme/app_colors.dart';
+import '../../core/widgets/app_button.dart';
+import '../authentication/services/auth_service.dart';
+import '../authentication/services/registration_draft.dart';
 
 class RoleSelectionScreen extends StatefulWidget {
   const RoleSelectionScreen({super.key});
@@ -12,9 +15,48 @@ class RoleSelectionScreen extends StatefulWidget {
 
 class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
   String selectedRole = 'farmer';
+  bool _isLoading = false;
 
-  void continueToProfile() {
-    Navigator.pushNamed(context, AppRouter.profileSetup);
+  Future<void> continueToProfile() async {
+    if (!RegistrationDraft.isComplete) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Registration information is incomplete.'),
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      RegistrationDraft.role = selectedRole;
+
+      await AuthService.register(
+        phoneNumber: RegistrationDraft.phoneNumber!,
+        password: RegistrationDraft.password!,
+        preferredLanguage: RegistrationDraft.preferredLanguage,
+        role: RegistrationDraft.role,
+      );
+
+      if (!mounted) return;
+
+      Navigator.pushReplacementNamed(context, AppRouter.profileSetup);
+    } on AuthException catch (error) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   @override
@@ -53,6 +95,8 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                 icon: Icons.agriculture_outlined,
                 isSelected: selectedRole == 'farmer',
                 onTap: () {
+                  if (_isLoading) return;
+
                   setState(() {
                     selectedRole = 'farmer';
                   });
@@ -67,6 +111,8 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
                 icon: Icons.medical_services_outlined,
                 isSelected: selectedRole == 'veterinarian',
                 onTap: () {
+                  if (_isLoading) return;
+
                   setState(() {
                     selectedRole = 'veterinarian';
                   });
@@ -75,9 +121,11 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
 
               const Spacer(),
 
-              ElevatedButton(
-                onPressed: continueToProfile,
-                child: const Text('Continue'),
+              AppButton(
+                text: 'Continue',
+                icon: Icons.arrow_forward,
+                isLoading: _isLoading,
+                onPressed: _isLoading ? null : continueToProfile,
               ),
             ],
           ),
@@ -110,24 +158,31 @@ class _RoleCard extends StatelessWidget {
       label: title,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(16),
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
+          duration: const Duration(milliseconds: 220),
           width: double.infinity,
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 20),
           decoration: BoxDecoration(
             color: AppColors.surface,
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: isSelected ? AppColors.primary : AppColors.border,
               width: isSelected ? 2 : 1,
             ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.03),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
           ),
           child: Column(
             children: [
               Icon(
                 icon,
-                size: 40,
+                size: 42,
                 color: isSelected ? AppColors.primary : AppColors.textSecondary,
               ),
 

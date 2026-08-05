@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-
+import 'services/registration_draft.dart';
 import '../../app/app_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_button.dart';
@@ -31,6 +31,8 @@ class _CreatePasswordScreenState extends State<CreatePasswordScreen> {
     if (!_formKey.currentState!.validate()) {
       return;
     }
+
+    RegistrationDraft.password = _passwordController.text;
 
     Navigator.pushReplacementNamed(context, AppRouter.roleSelection);
   }
