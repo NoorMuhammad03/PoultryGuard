@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'services/auth_service.dart';
 
 import '../../app/app_router.dart';
 import '../../core/theme/app_colors.dart';
@@ -20,6 +21,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
   bool _rememberMe = false;
   bool _hidePassword = true;
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -33,19 +35,39 @@ class _LoginScreenState extends State<LoginScreen> {
       return;
     }
 
-    final preferences = await SharedPreferences.getInstance();
+    setState(() {
+      _isLoading = true;
+    });
 
-    await preferences.setBool('remember_me', _rememberMe);
+    try {
+      final phoneNumber = '+92${_phoneController.text.trim()}';
 
-    if (!mounted) return;
+      await AuthService.login(
+        phoneNumber: phoneNumber,
+        password: _passwordController.text,
+        rememberMe: _rememberMe,
+      );
 
-    // Temporary UI navigation.
-    // Replace with FastAPI login later.
-    Navigator.pushNamedAndRemoveUntil(
-      context,
-      AppRouter.farmerDashboard,
-      (route) => false,
-    );
+      if (!mounted) return;
+
+      Navigator.pushNamedAndRemoveUntil(
+        context,
+        AppRouter.farmerDashboard,
+        (route) => false,
+      );
+    } on AuthException catch (error) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   void openRegistration() {
@@ -203,7 +225,12 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 const SizedBox(height: 12),
 
-                AppButton(text: 'Log in', icon: Icons.login, onPressed: login),
+                AppButton(
+                  text: 'Log in',
+                  icon: Icons.login,
+                  isLoading: _isLoading,
+                  onPressed: _isLoading ? null : login,
+                ),
 
                 const SizedBox(height: 22),
 

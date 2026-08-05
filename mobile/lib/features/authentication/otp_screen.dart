@@ -59,7 +59,7 @@ class _OtpScreenState extends State<OtpScreen> {
       return;
     }
 
-    Navigator.pushReplacementNamed(context, AppRouter.roleSelection);
+    Navigator.pushReplacementNamed(context, AppRouter.createPassword);
   }
 
   @override
