@@ -1,0 +1,24 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "sensors": {
+      "$farmId": {
+        ".read": "auth != null && (auth.token.role === 'admin' || auth.token.farm_id === $farmId || root.child('farms').child($farmId).child('owner_uid').val() === auth.uid)",
+        "latest": {
+          ".write": "auth != null && (auth.token.role === 'admin' || (auth.token.device === true && auth.token.farm_id === $farmId))",
+          ".validate": "newData.hasChildren(['temperature', 'humidity', 'ammonia'])"
+        },
+        "history": {
+          ".write": "auth != null && (auth.token.role === 'admin' || (auth.token.device === true && auth.token.farm_id === $farmId))"
+        }
+      }
+    },
+    "farms": {
+      "$farmId": {
+        ".read": "auth != null && (auth.token.role === 'admin' || data.child('owner_uid').val() === auth.uid)",
+        ".write": "auth != null && auth.token.role === 'admin'"
+      }
+    }
+  }
+}

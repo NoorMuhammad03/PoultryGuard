@@ -1,0 +1,62 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper authorization functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && request.auth.token.role == 'admin';
+    }
+
+    function isFarmOwner(farmId) {
+      return isAuthenticated() && (
+        request.auth.token.farm_id == farmId ||
+        request.auth.uid == get(/databases/$(database)/documents/farms/$(farmId)).data.owner_uid ||
+        request.auth.uid == resource.data.owner_uid
+      );
+    }
+
+    function isDeviceForFarm(farmId) {
+      return isAuthenticated() &&
+        request.auth.token.device == true &&
+        request.auth.token.farm_id == farmId;
+    }
+
+    // Default deny all access
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Users profile collection: each user can only read/write their own document unless admin
+    match /users/{userId} {
+      allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+      allow write: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+    }
+
+    // Farms collection: farmers can read their owned farm; admins have full access
+    match /farms/{farmId} {
+      allow read: if isAuthenticated() && (isFarmOwner(farmId) || isAdmin());
+      allow write: if isAdmin();
+
+      // Sensor telemetry sub-collection: writes strictly restricted to authenticated IoT devices for this farm or admins
+      match /sensors/{sensorDoc} {
+        allow read: if isAuthenticated() && (isFarmOwner(farmId) || isAdmin());
+        allow write: if isDeviceForFarm(farmId) || isAdmin();
+      }
+
+      // Other sub-collections (flocks, audit logs): read by owner/admin, write only by admin
+      match /{subcollection=**} {
+        allow read: if isAuthenticated() && (isFarmOwner(farmId) || isAdmin());
+        allow write: if isAdmin();
+      }
+    }
+
+    // Outbreak alerts: readable by authenticated users for biosecurity awareness; writable only by admins
+    match /outbreaks/{outbreakId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+  }
+}

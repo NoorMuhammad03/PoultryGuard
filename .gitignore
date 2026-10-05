@@ -4,12 +4,22 @@ backend/__pycache__/
 backend/*.pyc
 backend/.env
 
-# Node / React Web Admin Ignores
-web-admin/node_modules/
-web-admin/build/
-web-admin/.env
-admin-panel/node_modules/
-admin-panel/build/
+# Dashboard Ignores
+dashboard/**/node_modules/
+dashboard/**/dist/
+dashboard/**/dist-ssr/
+dashboard/**/.env
+dashboard/**/.env.*
+dashboard/**/!.env.example
+dashboard/**/__pycache__/
+dashboard/**/*.py[cod]
+dashboard/**/.venv/
+dashboard/**/venv/
+dashboard/**/.pytest_cache/
+dashboard/**/*.db
+dashboard/**/*.sqlite*
+dashboard/**/*serviceAccountKey*.json
+dashboard/**/*firebase-adminsdk*.json
 
 # Flutter Mobile Ignores
 mobile/.dart_tool/
@@ -19,4 +29,6 @@ mobile/ios/Flutter/Flutter.podspec
 
 # IDE & OS Ignores
 .DS_Store
-.vscode/git add .gitignore
+.idea/
+.vscode/
+Thumbs.db
