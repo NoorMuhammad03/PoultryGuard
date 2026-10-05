@@ -20,3 +20,38 @@ mobile/ios/Flutter/Flutter.podspec
 # IDE & OS Ignores
 .DS_Store
 .vscode/git add .gitignore
+
+# Firebase Admin credentials
+backend/secrets/
+backend/*service-account*.json
+
+
+# Python generated files
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Python virtual environments
+.venv/
+venv/
+
+# Archives
+*.zip
+
+# Flutter generated/build files
+.dart_tool/
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# ML datasets - too large for GitHub
+ml/dataset/
+
+# ML Python virtual environment
+ml/.mlvenv/

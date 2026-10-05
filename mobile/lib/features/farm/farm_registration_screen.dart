@@ -4,6 +4,7 @@ import '../../app/app_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_button.dart';
 import '../../core/widgets/app_text_field.dart';
+import '../../l10n/app_localizations.dart';
 import '../authentication/services/registration_draft.dart';
 import 'services/farm_service.dart';
 
@@ -16,6 +17,7 @@ class FarmRegistrationScreen extends StatefulWidget {
 
 class _FarmRegistrationScreenState extends State<FarmRegistrationScreen> {
   final _formKey = GlobalKey<FormState>();
+
   final _farmNameController = TextEditingController();
   final _capacityController = TextEditingController();
   final _addressController = TextEditingController();
@@ -72,11 +74,11 @@ class _FarmRegistrationScreenState extends State<FarmRegistrationScreen> {
     } catch (_) {
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('An unexpected error occurred. Please try again.'),
-        ),
-      );
+      final l10n = AppLocalizations.of(context);
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.unexpectedError)));
     } finally {
       if (mounted) {
         setState(() {
@@ -88,6 +90,8 @@ class _FarmRegistrationScreenState extends State<FarmRegistrationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -99,7 +103,7 @@ class _FarmRegistrationScreenState extends State<FarmRegistrationScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Align(
-                  alignment: Alignment.centerLeft,
+                  alignment: AlignmentDirectional.centerStart,
                   child: IconButton(
                     onPressed: _isLoading
                         ? null
@@ -115,9 +119,9 @@ class _FarmRegistrationScreenState extends State<FarmRegistrationScreen> {
 
                 const SizedBox(height: 16),
 
-                const Text(
-                  'Register your farm',
-                  style: TextStyle(
+                Text(
+                  l10n.farmRegistrationTitle,
+                  style: const TextStyle(
                     fontSize: 26,
                     fontWeight: FontWeight.w600,
                     color: AppColors.primaryDark,
@@ -126,9 +130,9 @@ class _FarmRegistrationScreenState extends State<FarmRegistrationScreen> {
 
                 const SizedBox(height: 8),
 
-                const Text(
-                  'Add the basic information for your poultry farm.',
-                  style: TextStyle(
+                Text(
+                  l10n.farmRegistrationSubtitle,
+                  style: const TextStyle(
                     fontSize: 14,
                     height: 1.45,
                     color: AppColors.textSecondary,
@@ -139,18 +143,18 @@ class _FarmRegistrationScreenState extends State<FarmRegistrationScreen> {
 
                 AppTextField(
                   controller: _farmNameController,
-                  label: 'Farm name',
-                  hint: 'Example: Ali Poultry Farm',
+                  label: l10n.farmName,
+                  hint: l10n.farmNameHint,
                   prefixIcon: Icons.agriculture_outlined,
                   validator: (value) {
                     final farmName = value?.trim() ?? '';
 
                     if (farmName.isEmpty) {
-                      return 'Please enter the farm name';
+                      return l10n.farmNameRequired;
                     }
 
                     if (farmName.length < 2) {
-                      return 'Farm name is too short';
+                      return l10n.farmNameTooShort;
                     }
 
                     return null;
@@ -161,15 +165,15 @@ class _FarmRegistrationScreenState extends State<FarmRegistrationScreen> {
 
                 AppTextField(
                   controller: _capacityController,
-                  label: 'Maximum bird capacity',
-                  hint: 'Example: 5000',
+                  label: l10n.birdCapacity,
+                  hint: l10n.birdCapacityHint,
                   prefixIcon: Icons.groups_outlined,
                   keyboardType: TextInputType.number,
                   validator: (value) {
                     final capacity = int.tryParse(value?.trim() ?? '');
 
                     if (capacity == null || capacity <= 0) {
-                      return 'Enter a valid bird capacity';
+                      return l10n.birdCapacityInvalid;
                     }
 
                     return null;
@@ -180,13 +184,13 @@ class _FarmRegistrationScreenState extends State<FarmRegistrationScreen> {
 
                 AppTextField(
                   controller: _addressController,
-                  label: 'Farm address',
-                  hint: 'Village, city or nearby landmark',
+                  label: l10n.farmAddress,
+                  hint: l10n.farmAddressHint,
                   prefixIcon: Icons.location_on_outlined,
                   maxLines: 2,
                   validator: (value) {
                     if ((value?.trim() ?? '').isEmpty) {
-                      return 'Please enter the farm address';
+                      return l10n.farmAddressRequired;
                     }
 
                     return null;
@@ -202,14 +206,14 @@ class _FarmRegistrationScreenState extends State<FarmRegistrationScreen> {
                           // GPS integration will be added later.
                         },
                   icon: const Icon(Icons.my_location),
-                  label: const Text('Use current location'),
+                  label: Text(l10n.useCurrentLocation),
                 ),
 
                 const SizedBox(height: 32),
 
-                const Text(
-                  'Notification preferences',
-                  style: TextStyle(
+                Text(
+                  l10n.notificationPreferences,
+                  style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.w600,
                     color: AppColors.primaryDark,
@@ -219,8 +223,8 @@ class _FarmRegistrationScreenState extends State<FarmRegistrationScreen> {
                 const SizedBox(height: 12),
 
                 _PreferenceCard(
-                  title: 'Sensor alerts',
-                  subtitle: 'Temperature, humidity, ammonia and smoke warnings',
+                  title: l10n.sensorAlerts,
+                  subtitle: l10n.sensorAlertsSubtitle,
                   value: sensorAlertsEnabled,
                   icon: Icons.sensors_outlined,
                   enabled: !_isLoading,
@@ -234,9 +238,8 @@ class _FarmRegistrationScreenState extends State<FarmRegistrationScreen> {
                 const SizedBox(height: 12),
 
                 _PreferenceCard(
-                  title: 'Disease alerts',
-                  subtitle:
-                      'AI diagnosis results and disease-risk notifications',
+                  title: l10n.diseaseAlerts,
+                  subtitle: l10n.diseaseAlertsSubtitle,
                   value: diseaseAlertsEnabled,
                   icon: Icons.health_and_safety_outlined,
                   enabled: !_isLoading,
@@ -250,8 +253,8 @@ class _FarmRegistrationScreenState extends State<FarmRegistrationScreen> {
                 const SizedBox(height: 12),
 
                 _PreferenceCard(
-                  title: 'Community alerts',
-                  subtitle: 'Warnings about nearby poultry disease outbreaks',
+                  title: l10n.communityAlerts,
+                  subtitle: l10n.communityAlertsSubtitle,
                   value: communityAlertsEnabled,
                   icon: Icons.location_city_outlined,
                   enabled: !_isLoading,
@@ -265,7 +268,7 @@ class _FarmRegistrationScreenState extends State<FarmRegistrationScreen> {
                 const SizedBox(height: 28),
 
                 AppButton(
-                  text: 'Save farm',
+                  text: l10n.saveFarm,
                   icon: Icons.check_circle_outline,
                   isLoading: _isLoading,
                   onPressed: _isLoading ? null : saveFarm,

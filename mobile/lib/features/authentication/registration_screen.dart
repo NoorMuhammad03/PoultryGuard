@@ -4,6 +4,8 @@ import '../../app/app_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_button.dart';
 import '../../core/widgets/app_text_field.dart';
+import '../../l10n/app_localizations.dart';
+import 'services/firebase_phone_auth_service.dart';
 import 'services/registration_draft.dart';
 
 class RegistrationScreen extends StatefulWidget {
@@ -17,24 +19,52 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   final _formKey = GlobalKey<FormState>();
   final _phoneController = TextEditingController();
 
+  bool _isLoading = false;
+
   @override
   void dispose() {
     _phoneController.dispose();
     super.dispose();
   }
 
-  void sendOtp() {
+  Future<void> sendOtp() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
 
-    RegistrationDraft.phoneNumber = '+92${_phoneController.text.trim()}';
+    setState(() {
+      _isLoading = true;
+    });
 
-    Navigator.pushNamed(context, AppRouter.otp);
+    final phoneNumber = '+92${_phoneController.text.trim()}';
+
+    try {
+      await FirebasePhoneAuthService.sendOtp(phoneNumber: phoneNumber);
+
+      RegistrationDraft.phoneNumber = phoneNumber;
+
+      if (!mounted) return;
+
+      Navigator.pushNamed(context, AppRouter.otp);
+    } on FirebasePhoneAuthException catch (error) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -46,7 +76,7 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Align(
-                  alignment: Alignment.centerLeft,
+                  alignment: AlignmentDirectional.centerStart,
                   child: IconButton(
                     onPressed: () {
                       Navigator.pop(context);
@@ -57,9 +87,9 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
 
                 const SizedBox(height: 18),
 
-                const Text(
-                  'Create your account',
-                  style: TextStyle(
+                Text(
+                  l10n.registerTitle,
+                  style: const TextStyle(
                     fontSize: 26,
                     fontWeight: FontWeight.w600,
                     color: AppColors.primaryDark,
@@ -68,9 +98,9 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
 
                 const SizedBox(height: 8),
 
-                const Text(
-                  'Verify your phone number once before creating your account.',
-                  style: TextStyle(
+                Text(
+                  l10n.registerSubtitle,
+                  style: const TextStyle(
                     fontSize: 14,
                     height: 1.45,
                     color: AppColors.textSecondary,
@@ -105,8 +135,8 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                     Expanded(
                       child: AppTextField(
                         controller: _phoneController,
-                        label: 'Phone number',
-                        hint: '3XX XXXXXXX',
+                        label: l10n.phoneNumber,
+                        hint: l10n.phoneHint,
                         prefixIcon: Icons.phone_outlined,
                         keyboardType: TextInputType.phone,
                         maxLength: 10,
@@ -116,11 +146,11 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                               '';
 
                           if (phone.isEmpty) {
-                            return 'Please enter your phone number';
+                            return l10n.enterPhoneNumber;
                           }
 
                           if (phone.length != 10 || !phone.startsWith('3')) {
-                            return 'Enter a valid Pakistani mobile number';
+                            return l10n.invalidPhoneNumber;
                           }
 
                           return null;
@@ -133,9 +163,10 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                 const SizedBox(height: 20),
 
                 AppButton(
-                  text: 'Send verification code',
+                  text: l10n.sendVerificationCode,
                   icon: Icons.sms_outlined,
-                  onPressed: sendOtp,
+                  isLoading: _isLoading,
+                  onPressed: _isLoading ? null : sendOtp,
                 ),
 
                 const SizedBox(height: 20),
@@ -149,18 +180,18 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                       color: AppColors.primaryLight.withValues(alpha: 0.55),
                     ),
                   ),
-                  child: const Row(
+                  child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(
+                      const Icon(
                         Icons.verified_user_outlined,
                         color: AppColors.primary,
                       ),
-                      SizedBox(width: 12),
+                      const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          'Your phone number is verified only once during registration.',
-                          style: TextStyle(
+                          l10n.registrationPhoneInfo,
+                          style: const TextStyle(
                             fontSize: 13,
                             height: 1.45,
                             color: AppColors.textSecondary,

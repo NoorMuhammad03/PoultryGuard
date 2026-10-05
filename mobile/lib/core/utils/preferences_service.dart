@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class PreferencesService {
@@ -6,10 +7,24 @@ class PreferencesService {
   static const String _languageKey = 'selected_language';
   static const String _onboardingCompletedKey = 'onboarding_completed';
 
+  static final ValueNotifier<String> languageNotifier = ValueNotifier<String>(
+    'en',
+  );
+
+  static Future<void> initializeLanguage() async {
+    final preferences = await SharedPreferences.getInstance();
+
+    final savedLanguage = preferences.getString(_languageKey) ?? 'en';
+
+    languageNotifier.value = savedLanguage;
+  }
+
   static Future<void> saveLanguage(String languageCode) async {
     final preferences = await SharedPreferences.getInstance();
 
     await preferences.setString(_languageKey, languageCode);
+
+    languageNotifier.value = languageCode;
   }
 
   static Future<String?> getLanguage() async {

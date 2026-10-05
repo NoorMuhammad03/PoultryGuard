@@ -70,3 +70,9 @@ class Farm(Base):
         default=datetime.utcnow,
         onupdate=datetime.utcnow,
     )
+
+    flocks = relationship(
+    "Flock",
+    back_populates="farm",
+    cascade="all, delete-orphan",
+    )

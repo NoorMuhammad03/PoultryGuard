@@ -12,6 +12,16 @@ from app.schemas.auth import (
     RegisterRequest,
     TokenResponse,
 )
+
+from app.schemas.auth import (
+    ChangePasswordRequest,
+    LoginRequest,
+    RefreshTokenRequest,
+    RegisterRequest,
+    ResetPasswordRequest,
+    TokenResponse,
+)
+
 from app.schemas.user import UserResponse
 from app.services.auth_service import AuthService
 from app.schemas.auth import RefreshTokenRequest
@@ -43,6 +53,42 @@ def register(
         ) from error
 
 
+@router.post(
+    "/reset-password",
+    status_code=status.HTTP_200_OK,
+)
+def reset_password(
+    request: ResetPasswordRequest,
+    db: Session = Depends(get_db),
+) -> dict[str, str]:
+    try:
+        AuthService.reset_password(
+            db=db,
+            phone_number=request.phone_number,
+            firebase_id_token=request.firebase_id_token,
+            new_password=request.new_password,
+        )
+
+        return {
+            "message": "Password reset successfully",
+        }
+
+    except ValueError as error:
+        message = str(error)
+
+        if "No account exists" in message:
+            status_code = status.HTTP_404_NOT_FOUND
+        elif "disabled" in message:
+            status_code = status.HTTP_403_FORBIDDEN
+        else:
+            status_code = status.HTTP_401_UNAUTHORIZED
+
+        raise HTTPException(
+            status_code=status_code,
+            detail=message,
+        ) from error
+
+    
 @router.post(
     "/login",
     response_model=TokenResponse,
@@ -138,7 +184,14 @@ def change_password(
         }
 
     except ValueError as error:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(error),
-        ) from error
+     message = str(error)
+
+     if "already exists" in message:
+        status_code = status.HTTP_409_CONFLICT
+     else:
+        status_code = status.HTTP_401_UNAUTHORIZED
+
+     raise HTTPException(
+        status_code=status_code,
+        detail=message,
+     ) from error

@@ -4,6 +4,9 @@ import '../../app/app_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_button.dart';
 import '../../core/widgets/app_text_field.dart';
+import '../../l10n/app_localizations.dart';
+import '../authentication/services/auth_service.dart';
+import '../authentication/services/registration_draft.dart';
 
 class ProfileSetupScreen extends StatefulWidget {
   const ProfileSetupScreen({super.key});
@@ -15,6 +18,7 @@ class ProfileSetupScreen extends StatefulWidget {
 class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -22,16 +26,50 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     super.dispose();
   }
 
-  void continueProfileSetup() {
+  Future<void> continueProfileSetup() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
 
-    Navigator.pushNamed(context, AppRouter.farmRegistration);
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      await AuthService.updateProfile(fullName: _nameController.text);
+
+      if (!mounted) return;
+
+      if (RegistrationDraft.role == 'veterinarian') {
+        RegistrationDraft.clear();
+
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          AppRouter.veterinarianDashboard,
+          (route) => false,
+        );
+      } else {
+        Navigator.pushNamed(context, AppRouter.farmRegistration);
+      }
+    } on AuthException catch (error) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -43,7 +81,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Align(
-                  alignment: Alignment.centerLeft,
+                  alignment: AlignmentDirectional.centerStart,
                   child: IconButton(
                     onPressed: () {
                       Navigator.pop(context);
@@ -57,9 +95,9 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
                 const SizedBox(height: 16),
 
-                const Text(
-                  'Set up your profile',
-                  style: TextStyle(
+                Text(
+                  l10n.profileTitle,
+                  style: const TextStyle(
                     fontSize: 26,
                     fontWeight: FontWeight.w600,
                     color: AppColors.primaryDark,
@@ -68,9 +106,9 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
                 const SizedBox(height: 8),
 
-                const Text(
-                  'Enter your basic information to continue.',
-                  style: TextStyle(
+                Text(
+                  l10n.profileSubtitle,
+                  style: const TextStyle(
                     fontSize: 14,
                     height: 1.45,
                     color: AppColors.textSecondary,
@@ -102,19 +140,19 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
                 AppTextField(
                   controller: _nameController,
-                  label: 'Full name',
-                  hint: 'Enter your full name',
+                  label: l10n.fullName,
+                  hint: l10n.fullNameHint,
                   prefixIcon: Icons.person_outline,
                   textInputAction: TextInputAction.done,
                   validator: (value) {
                     final name = value?.trim() ?? '';
 
                     if (name.isEmpty) {
-                      return 'Please enter your full name';
+                      return l10n.fullNameRequired;
                     }
 
                     if (name.length < 2) {
-                      return 'Name must contain at least 2 characters';
+                      return l10n.fullNameTooShort;
                     }
 
                     return null;
@@ -123,9 +161,9 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
 
                 const SizedBox(height: 16),
 
-                const AppTextField(
-                  label: 'Phone number',
-                  hint: '+92 3XX XXXXXXX',
+                AppTextField(
+                  label: l10n.phoneNumber,
+                  hint: l10n.profilePhoneHint,
                   prefixIcon: Icons.phone_outlined,
                   enabled: false,
                 ),
@@ -133,9 +171,10 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                 const Spacer(),
 
                 AppButton(
-                  text: 'Continue',
+                  text: l10n.continueButton,
                   icon: Icons.arrow_forward,
-                  onPressed: continueProfileSetup,
+                  isLoading: _isLoading,
+                  onPressed: _isLoading ? null : continueProfileSetup,
                 ),
               ],
             ),

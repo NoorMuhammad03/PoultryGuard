@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
-import 'services/registration_draft.dart';
+
 import '../../app/app_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_button.dart';
 import '../../core/widgets/app_text_field.dart';
+import '../../l10n/app_localizations.dart';
+import 'services/registration_draft.dart';
 
 class CreatePasswordScreen extends StatefulWidget {
   const CreatePasswordScreen({super.key});
@@ -39,6 +41,8 @@ class _CreatePasswordScreenState extends State<CreatePasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -51,9 +55,9 @@ class _CreatePasswordScreenState extends State<CreatePasswordScreen> {
               children: [
                 const SizedBox(height: 30),
 
-                const Text(
-                  'Create a password',
-                  style: TextStyle(
+                Text(
+                  l10n.createPasswordTitle,
+                  style: const TextStyle(
                     fontSize: 26,
                     fontWeight: FontWeight.w600,
                     color: AppColors.primaryDark,
@@ -62,9 +66,9 @@ class _CreatePasswordScreenState extends State<CreatePasswordScreen> {
 
                 const SizedBox(height: 8),
 
-                const Text(
-                  'Use this password for future logins.',
-                  style: TextStyle(
+                Text(
+                  l10n.createPasswordSubtitle,
+                  style: const TextStyle(
                     fontSize: 14,
                     color: AppColors.textSecondary,
                   ),
@@ -74,8 +78,8 @@ class _CreatePasswordScreenState extends State<CreatePasswordScreen> {
 
                 AppTextField(
                   controller: _passwordController,
-                  label: 'Password',
-                  hint: 'Minimum 8 characters',
+                  label: l10n.password,
+                  hint: l10n.createPasswordHint,
                   prefixIcon: Icons.lock_outline,
                   obscureText: _hidePassword,
                   suffixIcon: IconButton(
@@ -94,11 +98,11 @@ class _CreatePasswordScreenState extends State<CreatePasswordScreen> {
                     final password = value ?? '';
 
                     if (password.isEmpty) {
-                      return 'Please create a password';
+                      return l10n.createPasswordRequired;
                     }
 
                     if (password.length < 8) {
-                      return 'Password must contain at least 8 characters';
+                      return l10n.passwordMinimum;
                     }
 
                     return null;
@@ -109,8 +113,8 @@ class _CreatePasswordScreenState extends State<CreatePasswordScreen> {
 
                 AppTextField(
                   controller: _confirmPasswordController,
-                  label: 'Confirm password',
-                  hint: 'Enter the password again',
+                  label: l10n.confirmPassword,
+                  hint: l10n.confirmPasswordHint,
                   prefixIcon: Icons.lock_reset_outlined,
                   obscureText: _hideConfirmation,
                   suffixIcon: IconButton(
@@ -127,11 +131,11 @@ class _CreatePasswordScreenState extends State<CreatePasswordScreen> {
                   ),
                   validator: (value) {
                     if ((value ?? '').isEmpty) {
-                      return 'Please confirm your password';
+                      return l10n.confirmPasswordRequired;
                     }
 
                     if (value != _passwordController.text) {
-                      return 'Passwords do not match';
+                      return l10n.passwordsDoNotMatch;
                     }
 
                     return null;
@@ -147,21 +151,20 @@ class _CreatePasswordScreenState extends State<CreatePasswordScreen> {
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(color: AppColors.border),
                   ),
-                  child: const Column(
+                  child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Your password should contain:',
-                        style: TextStyle(
+                        l10n.passwordRequirementsTitle,
+                        style: const TextStyle(
                           fontWeight: FontWeight.w600,
                           color: AppColors.textPrimary,
                         ),
                       ),
-                      SizedBox(height: 8),
+                      const SizedBox(height: 8),
                       Text(
-                        '• At least 8 characters\n'
-                        '• A combination of letters and numbers',
-                        style: TextStyle(
+                        l10n.passwordRequirementsBody,
+                        style: const TextStyle(
                           height: 1.6,
                           color: AppColors.textSecondary,
                         ),
@@ -173,7 +176,7 @@ class _CreatePasswordScreenState extends State<CreatePasswordScreen> {
                 const SizedBox(height: 28),
 
                 AppButton(
-                  text: 'Continue',
+                  text: l10n.continueButton,
                   icon: Icons.arrow_forward,
                   onPressed: continueRegistration,
                 ),

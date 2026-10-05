@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
-import 'services/auth_service.dart';
 
 import '../../app/app_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_button.dart';
 import '../../core/widgets/app_text_field.dart';
+import '../../l10n/app_localizations.dart';
+import 'services/auth_service.dart';
+import 'services/password_reset_draft.dart';
+import '../../core/utils/preferences_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -47,19 +50,52 @@ class _LoginScreenState extends State<LoginScreen> {
         rememberMe: _rememberMe,
       );
 
+      final user = await AuthService.getCurrentUser();
+      final preferredLanguage = user['preferred_language'] as String?;
+
+      if (preferredLanguage == 'en' || preferredLanguage == 'ur') {
+        await PreferencesService.saveLanguage(preferredLanguage!);
+      }
+
       if (!mounted) return;
 
-      Navigator.pushNamedAndRemoveUntil(
-        context,
-        AppRouter.farmerDashboard,
-        (route) => false,
-      );
+      final role = user['role'] as String?;
+      final onboardingCompleted =
+          user['onboarding_completed'] as bool? ?? false;
+
+      if (!onboardingCompleted) {
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          AppRouter.profileSetup,
+          (route) => false,
+        );
+      } else if (role == 'veterinarian') {
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          AppRouter.veterinarianDashboard,
+          (route) => false,
+        );
+      } else {
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          AppRouter.farmerDashboard,
+          (route) => false,
+        );
+      }
     } on AuthException catch (error) {
       if (!mounted) return;
 
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(error.message)));
+    } catch (_) {
+      if (!mounted) return;
+
+      final l10n = AppLocalizations.of(context);
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.unexpectedError)));
     } finally {
       if (mounted) {
         setState(() {
@@ -75,6 +111,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -87,9 +125,9 @@ class _LoginScreenState extends State<LoginScreen> {
               children: [
                 const SizedBox(height: 28),
 
-                const Text(
-                  'Welcome back',
-                  style: TextStyle(
+                Text(
+                  l10n.welcomeBack,
+                  style: const TextStyle(
                     fontSize: 26,
                     fontWeight: FontWeight.w600,
                     color: AppColors.primaryDark,
@@ -98,9 +136,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 const SizedBox(height: 8),
 
-                const Text(
-                  'Log in using your phone number and password.',
-                  style: TextStyle(
+                Text(
+                  l10n.loginSubtitle,
+                  style: const TextStyle(
                     fontSize: 14,
                     height: 1.45,
                     color: AppColors.textSecondary,
@@ -136,8 +174,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     Expanded(
                       child: AppTextField(
                         controller: _phoneController,
-                        label: 'Phone number',
-                        hint: '3XX XXXXXXX',
+                        label: l10n.phoneNumber,
+                        hint: l10n.phoneHint,
                         prefixIcon: Icons.phone_outlined,
                         keyboardType: TextInputType.phone,
                         maxLength: 10,
@@ -147,11 +185,11 @@ class _LoginScreenState extends State<LoginScreen> {
                               '';
 
                           if (phone.isEmpty) {
-                            return 'Please enter your phone number';
+                            return l10n.enterPhoneNumber;
                           }
 
                           if (phone.length != 10 || !phone.startsWith('3')) {
-                            return 'Enter a valid Pakistani mobile number';
+                            return l10n.invalidPhoneNumber;
                           }
 
                           return null;
@@ -165,8 +203,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
                 AppTextField(
                   controller: _passwordController,
-                  label: 'Password',
-                  hint: 'Enter your password',
+                  label: l10n.password,
+                  hint: l10n.passwordHint,
                   prefixIcon: Icons.lock_outline,
                   obscureText: _hidePassword,
                   suffixIcon: IconButton(
@@ -183,11 +221,11 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   validator: (value) {
                     if ((value ?? '').isEmpty) {
-                      return 'Please enter your password';
+                      return l10n.enterPassword;
                     }
 
                     if ((value ?? '').length < 8) {
-                      return 'Password must contain at least 8 characters';
+                      return l10n.passwordMinimum;
                     }
 
                     return null;
@@ -207,17 +245,26 @@ class _LoginScreenState extends State<LoginScreen> {
                         });
                       },
                     ),
-                    const Expanded(
+
+                    Expanded(
                       child: Text(
-                        'Remember me',
-                        style: TextStyle(color: AppColors.textPrimary),
+                        l10n.rememberMe,
+                        style: const TextStyle(color: AppColors.textPrimary),
                       ),
                     ),
+
                     TextButton(
-                      onPressed: () {
-                        // Add password reset later.
-                      },
-                      child: const Text('Forgot password?'),
+                      onPressed: _isLoading
+                          ? null
+                          : () {
+                              PasswordResetDraft.clear();
+
+                              Navigator.pushNamed(
+                                context,
+                                AppRouter.forgotPassword,
+                              );
+                            },
+                      child: Text(l10n.forgotPassword),
                     ),
                   ],
                 ),
@@ -225,7 +272,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 12),
 
                 AppButton(
-                  text: 'Log in',
+                  text: l10n.loginButton,
                   icon: Icons.login,
                   isLoading: _isLoading,
                   onPressed: _isLoading ? null : login,
@@ -236,15 +283,16 @@ class _LoginScreenState extends State<LoginScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text(
-                      'New to PoultryGuard?',
-                      style: TextStyle(color: AppColors.textSecondary),
+                    Text(
+                      l10n.newToPoultryGuard,
+                      style: const TextStyle(color: AppColors.textSecondary),
                     ),
+
                     TextButton(
                       onPressed: openRegistration,
-                      child: const Text(
-                        'Create account',
-                        style: TextStyle(fontWeight: FontWeight.w600),
+                      child: Text(
+                        l10n.createAccount,
+                        style: const TextStyle(fontWeight: FontWeight.w600),
                       ),
                     ),
                   ],

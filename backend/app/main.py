@@ -11,6 +11,10 @@ from app.routers.user import router as user_router
 
 from app.routers.farm import router as farm_router
 
+from app.routers.flock import router as flock_router
+
+from app.routers.medication import router as medication_router
+
 from fastapi.middleware.cors import CORSMiddleware
 
 settings = get_settings()
@@ -31,6 +35,8 @@ app.add_middleware(
 app.include_router(auth_router)
 app.include_router(user_router)
 app.include_router(farm_router)
+app.include_router(flock_router)
+app.include_router(medication_router)
 
 @app.get("/")
 async def root() -> dict[str, str]:

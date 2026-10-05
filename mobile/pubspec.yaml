@@ -19,6 +19,11 @@ dependencies:
   shared_preferences: ^2.5.5
   dio: ^5.11.0
   flutter_secure_storage: ^10.3.1
+  firebase_core: ^4.13.0
+  firebase_auth: ^6.5.7
+  image_picker: ^1.2.3
+  image: ^4.9.1
+  flutter_litert: ^3.8.0
 
 dev_dependencies:
   flutter_test:
@@ -29,3 +34,7 @@ dev_dependencies:
 flutter:
   generate: true
   uses-material-design: true
+  
+  assets:
+    - assets/models/poultryguard_disease_model.tflite
+    - assets/models/labels.txt

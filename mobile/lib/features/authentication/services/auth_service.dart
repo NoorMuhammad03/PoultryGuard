@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/foundation.dart';
 
 import '../../../core/api/api_client.dart';
 import '../../../core/api/api_endpoints.dart';
@@ -13,6 +14,7 @@ class AuthService {
     required String password,
     required String preferredLanguage,
     required String role,
+    required String firebaseIdToken,
   }) async {
     try {
       await ApiClient.dio.post(
@@ -22,11 +24,10 @@ class AuthService {
           'password': password,
           'preferred_language': preferredLanguage,
           'role': role,
+          'firebase_id_token': firebaseIdToken,
         },
       );
 
-      // Register currently returns the user, not tokens.
-      // Log in immediately to obtain access and refresh tokens.
       await login(
         phoneNumber: phoneNumber,
         password: password,
@@ -47,19 +48,19 @@ class AuthService {
     }
   }
 
-  static Future<bool> restoreSession() async {
+  static Future<Map<String, dynamic>?> restoreSession() async {
     final preferences = await SharedPreferences.getInstance();
     final rememberMe = preferences.getBool('remember_me') ?? false;
 
     if (!rememberMe) {
       await TokenStorage.clearTokens();
-      return false;
+      return null;
     }
 
     final refreshToken = await TokenStorage.getRefreshToken();
 
     if (refreshToken == null || refreshToken.isEmpty) {
-      return false;
+      return null;
     }
 
     try {
@@ -75,7 +76,8 @@ class AuthService {
 
       if (newAccessToken == null || newRefreshToken == null) {
         await TokenStorage.clearTokens();
-        return false;
+        await preferences.setBool('remember_me', false);
+        return null;
       }
 
       await TokenStorage.saveTokens(
@@ -83,12 +85,17 @@ class AuthService {
         refreshToken: newRefreshToken,
       );
 
-      return true;
+      return await getCurrentUser();
     } on DioException {
       await TokenStorage.clearTokens();
       await preferences.setBool('remember_me', false);
 
-      return false;
+      return null;
+    } on AuthException {
+      await TokenStorage.clearTokens();
+      await preferences.setBool('remember_me', false);
+
+      return null;
     }
   }
 
@@ -107,6 +114,143 @@ class AuthService {
 
       await TokenStorage.clearTokens();
       await preferences.setBool('remember_me', false);
+    }
+  }
+
+  static Future<void> updateProfile({required String fullName}) async {
+    debugPrint('====== updateProfile called ======');
+
+    try {
+      debugPrint('Sending name: $fullName');
+
+      final response = await ApiClient.dio.patch(
+        ApiEndpoints.currentUser,
+        data: {'full_name': fullName.trim()},
+      );
+
+      debugPrint('Status: ${response.statusCode}');
+      debugPrint('Response: ${response.data}');
+    } on DioException catch (error) {
+      debugPrint('ERROR STATUS: ${error.response?.statusCode}');
+      debugPrint('ERROR BODY: ${error.response?.data}');
+      rethrow;
+    }
+  }
+
+  static Future<Map<String, dynamic>> getCurrentUser() async {
+    try {
+      final response = await ApiClient.dio.get(ApiEndpoints.currentUser);
+
+      return response.data as Map<String, dynamic>;
+    } on DioException catch (error) {
+      final responseData = error.response?.data;
+
+      if (responseData is Map<String, dynamic>) {
+        final detail = responseData['detail'];
+
+        if (detail is String) {
+          throw AuthException(detail);
+        }
+      }
+
+      throw const AuthException('Could not load the user profile.');
+    }
+  }
+
+  static Future<void> resetPassword({
+    required String phoneNumber,
+    required String firebaseIdToken,
+    required String newPassword,
+  }) async {
+    try {
+      await ApiClient.dio.post(
+        ApiEndpoints.resetPassword,
+        data: {
+          'phone_number': phoneNumber,
+          'firebase_id_token': firebaseIdToken,
+          'new_password': newPassword,
+        },
+      );
+    } on DioException catch (error) {
+      final responseData = error.response?.data;
+
+      if (responseData is Map<String, dynamic>) {
+        final detail = responseData['detail'];
+
+        if (detail is String) {
+          throw AuthException(detail);
+        }
+      }
+
+      if (error.type == DioExceptionType.connectionError) {
+        throw const AuthException(
+          'Could not connect to the PoultryGuard server.',
+        );
+      }
+
+      throw const AuthException('Password reset failed. Please try again.');
+    }
+  }
+
+  static Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    try {
+      await ApiClient.dio.post(
+        ApiEndpoints.changePassword,
+        data: {
+          'current_password': currentPassword,
+          'new_password': newPassword,
+        },
+      );
+    } on DioException catch (error) {
+      final responseData = error.response?.data;
+
+      if (responseData is Map<String, dynamic>) {
+        final detail = responseData['detail'];
+
+        if (detail is String) {
+          throw AuthException(detail);
+        }
+      }
+
+      if (error.type == DioExceptionType.connectionError) {
+        throw const AuthException(
+          'Could not connect to the PoultryGuard server.',
+        );
+      }
+
+      throw const AuthException('Password change failed. Please try again.');
+    }
+  }
+
+  static Future<void> updatePreferredLanguage({
+    required String languageCode,
+  }) async {
+    try {
+      await ApiClient.dio.patch(
+        ApiEndpoints.currentUser,
+        data: {'preferred_language': languageCode},
+      );
+    } on DioException catch (error) {
+      final responseData = error.response?.data;
+
+      if (responseData is Map<String, dynamic>) {
+        final detail = responseData['detail'];
+
+        if (detail is String) {
+          throw AuthException(detail);
+        }
+      }
+
+      if (error.type == DioExceptionType.connectionError) {
+        throw const AuthException(
+          'Could not connect to the PoultryGuard server.',
+        );
+      }
+
+      throw const AuthException('Unable to update language preference.');
     }
   }
 

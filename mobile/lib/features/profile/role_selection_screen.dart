@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../app/app_router.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/widgets/app_button.dart';
+import '../../l10n/app_localizations.dart';
 import '../authentication/services/auth_service.dart';
 import '../authentication/services/registration_draft.dart';
 
@@ -18,12 +19,12 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
   bool _isLoading = false;
 
   Future<void> continueToProfile() async {
+    final l10n = AppLocalizations.of(context);
+
     if (!RegistrationDraft.isComplete) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Registration information is incomplete.'),
-        ),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(l10n.roleRegistrationIncomplete)));
       return;
     }
 
@@ -39,6 +40,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
         password: RegistrationDraft.password!,
         preferredLanguage: RegistrationDraft.preferredLanguage,
         role: RegistrationDraft.role,
+        firebaseIdToken: RegistrationDraft.firebaseIdToken!,
       );
 
       if (!mounted) return;
@@ -61,6 +63,8 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -71,9 +75,9 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
             children: [
               const SizedBox(height: 18),
 
-              const Text(
-                'Who are you?',
-                style: TextStyle(
+              Text(
+                l10n.roleTitle,
+                style: const TextStyle(
                   fontSize: 24,
                   fontWeight: FontWeight.w600,
                   color: AppColors.primaryDark,
@@ -82,16 +86,18 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
 
               const SizedBox(height: 6),
 
-              const Text(
-                'Select your role to continue',
-                style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+              Text(
+                l10n.roleSubtitle,
+                style: const TextStyle(
+                  fontSize: 14,
+                  color: AppColors.textSecondary,
+                ),
               ),
 
               const SizedBox(height: 26),
 
               _RoleCard(
-                title: 'Farmer',
-                urduTitle: 'کسان',
+                title: l10n.roleFarmer,
                 icon: Icons.agriculture_outlined,
                 isSelected: selectedRole == 'farmer',
                 onTap: () {
@@ -106,8 +112,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
               const SizedBox(height: 14),
 
               _RoleCard(
-                title: 'Veterinarian',
-                urduTitle: 'ڈاکٹر',
+                title: l10n.roleVeterinarian,
                 icon: Icons.medical_services_outlined,
                 isSelected: selectedRole == 'veterinarian',
                 onTap: () {
@@ -122,7 +127,7 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
               const Spacer(),
 
               AppButton(
-                text: 'Continue',
+                text: l10n.continueButton,
                 icon: Icons.arrow_forward,
                 isLoading: _isLoading,
                 onPressed: _isLoading ? null : continueToProfile,
@@ -138,14 +143,12 @@ class _RoleSelectionScreenState extends State<RoleSelectionScreen> {
 class _RoleCard extends StatelessWidget {
   const _RoleCard({
     required this.title,
-    required this.urduTitle,
     required this.icon,
     required this.isSelected,
     required this.onTap,
   });
 
   final String title;
-  final String urduTitle;
   final IconData icon;
   final bool isSelected;
   final VoidCallback onTap;
@@ -190,24 +193,13 @@ class _RoleCard extends StatelessWidget {
 
               Text(
                 title,
+                textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 17,
                   fontWeight: FontWeight.w600,
                   color: isSelected
                       ? AppColors.primaryDark
                       : AppColors.textPrimary,
-                ),
-              ),
-
-              const SizedBox(height: 4),
-
-              Text(
-                urduTitle,
-                textDirection: TextDirection.rtl,
-                style: const TextStyle(
-                  fontSize: 15,
-                  height: 1.5,
-                  color: AppColors.textSecondary,
                 ),
               ),
             ],

@@ -12,12 +12,20 @@ class FarmerDashboardScreen extends StatefulWidget {
 
 class _FarmerDashboardScreenState extends State<FarmerDashboardScreen> {
   bool _isLoggingOut = false;
+  bool _isLogoutDialogOpen = false;
 
   Future<void> _logout() async {
-    if (_isLoggingOut) return;
+    if (_isLoggingOut || _isLogoutDialogOpen) {
+      return;
+    }
+
+    setState(() {
+      _isLogoutDialogOpen = true;
+    });
 
     final shouldLogout = await showDialog<bool>(
       context: context,
+      barrierDismissible: false,
       builder: (dialogContext) {
         return AlertDialog(
           title: const Text('Log out'),
@@ -25,22 +33,36 @@ class _FarmerDashboardScreenState extends State<FarmerDashboardScreen> {
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.pop(dialogContext, false);
+                Navigator.of(dialogContext).pop(false);
               },
               child: const Text('Cancel'),
             ),
-            ElevatedButton(
+            TextButton(
               onPressed: () {
-                Navigator.pop(dialogContext, true);
+                Navigator.of(dialogContext).pop(true);
               },
-              child: const Text('Log out'),
+              child: const Text(
+                'Log out',
+                style: TextStyle(
+                  color: AppColors.danger,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
           ],
         );
       },
     );
 
-    if (shouldLogout != true || !mounted) return;
+    if (!mounted) return;
+
+    setState(() {
+      _isLogoutDialogOpen = false;
+    });
+
+    if (shouldLogout != true) {
+      return;
+    }
 
     setState(() {
       _isLoggingOut = true;
@@ -84,7 +106,7 @@ class _FarmerDashboardScreenState extends State<FarmerDashboardScreen> {
             icon: const Icon(Icons.notifications_outlined),
           ),
           IconButton(
-            onPressed: _isLoggingOut ? null : _logout,
+            onPressed: (_isLoggingOut || _isLogoutDialogOpen) ? null : _logout,
             tooltip: 'Log out',
             icon: _isLoggingOut
                 ? const SizedBox(
@@ -222,12 +244,46 @@ class _FarmerDashboardScreenState extends State<FarmerDashboardScreen> {
                     'Fan, buzzer and relay response during dangerous conditions.',
               ),
 
+              const SizedBox(height: 24),
+
+              const Text(
+                'Farm management',
+                style: TextStyle(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.primaryDark,
+                ),
+              ),
+
+              const SizedBox(height: 12),
+
+              _DashboardActionCard(
+                icon: Icons.groups_outlined,
+                title: 'Flocks',
+                subtitle: 'Create and manage poultry batches.',
+                onTap: () {
+                  Navigator.pushNamed(context, AppRouter.flockList);
+                },
+              ),
+
+              _DashboardActionCard(
+                icon: Icons.language,
+                title: 'Language',
+                subtitle: 'Change app language',
+                onTap: () {
+                  Navigator.pushNamed(context, AppRouter.languageSettings);
+                },
+              ),
+
               const SizedBox(height: 10),
 
-              const _ComingSoonCard(
+              _DashboardActionCard(
                 icon: Icons.camera_alt_outlined,
                 title: 'AI disease diagnosis',
                 subtitle: 'Offline poultry-dropping image analysis.',
+                onTap: () {
+                  Navigator.pushNamed(context, AppRouter.diseaseDetection);
+                },
               ),
             ],
           ),
@@ -294,6 +350,79 @@ class _ComingSoonCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _DashboardActionCard extends StatelessWidget {
+  const _DashboardActionCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(14),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 46,
+              height: 46,
+              decoration: BoxDecoration(
+                color: AppColors.primaryLight.withValues(alpha: 0.22),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: AppColors.primary),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      height: 1.4,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(
+              Icons.arrow_forward_ios,
+              size: 15,
+              color: AppColors.textSecondary,
+            ),
+          ],
+        ),
       ),
     );
   }

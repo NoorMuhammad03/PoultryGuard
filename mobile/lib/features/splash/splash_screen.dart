@@ -26,16 +26,35 @@ class _SplashScreenState extends State<SplashScreen> {
     // Keep the splash visible briefly.
     await Future<void>.delayed(const Duration(seconds: 2));
 
-    final sessionRestored = await AuthService.restoreSession();
+    final user = await AuthService.restoreSession();
 
     if (!mounted) return;
 
-    if (sessionRestored) {
-      Navigator.pushNamedAndRemoveUntil(
-        context,
-        AppRouter.farmerDashboard,
-        (route) => false,
-      );
+    if (user != null) {
+      final role = user['role'] as String?;
+      final onboardingCompleted =
+          user['onboarding_completed'] as bool? ?? false;
+
+      if (!onboardingCompleted) {
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          AppRouter.profileSetup,
+          (route) => false,
+        );
+      } else if (role == 'veterinarian') {
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          AppRouter.veterinarianDashboard,
+          (route) => false,
+        );
+      } else {
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          AppRouter.farmerDashboard,
+          (route) => false,
+        );
+      }
+
       return;
     }
 
